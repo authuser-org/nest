@@ -103,6 +103,7 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
     },
     observability: {
       logger: resolveLogger(options.observability?.logger ?? true),
+      loggerFormat: options.observability?.loggerFormat ?? 'json',
       requestLogging: options.observability?.requestLogging ?? false,
       responseTimeHeader: options.observability?.responseTimeHeader ?? false,
     },

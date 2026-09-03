@@ -78,8 +78,13 @@ not a dependency-readiness check. Supply a custom response or implement a Nest
 controller for deeper readiness logic. Use `health.preHandler` when the endpoint
 must not be public.
 
-Fastify's Pino logger is enabled, while per-request logging is disabled to reduce
-noise and overhead. Enable it with `observability.requestLogging`. The optional
-`responseTimeHeader` emits a standards-compatible `Server-Timing` value. Default
-logging redacts authorization, cookie and set-cookie fields. A custom Pino `redact`
-configuration overrides those defaults.
+Fastify's Pino JSON logger is enabled by default, while per-request logging is
+disabled to reduce noise and overhead. Enable it with
+`observability.requestLogging`. Set `observability.loggerFormat: 'nest'` for the
+readable standard Nest console format; JSON remains recommended for production log
+ingestion and maximum throughput. The Nest adapter only emits selected request
+metadata and never serializes headers or bodies.
+
+The optional `responseTimeHeader` emits a standards-compatible `Server-Timing`
+value. Default JSON logging redacts authorization, cookie and set-cookie fields. A
+custom Pino `redact` configuration overrides those defaults.

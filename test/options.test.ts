@@ -22,5 +22,6 @@ describe('resolveOptions', () => {
     expect(options.observability.logger).toMatchObject({
       redact: { censor: '[REDACTED]' },
     });
+    expect(options.observability.loggerFormat).toBe('json');
   });
 });

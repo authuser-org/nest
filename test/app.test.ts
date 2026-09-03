@@ -1,5 +1,5 @@
-import { BadRequestException, Controller, Get, Module, QueryMethod } from '@nestjs/common';
-import { afterEach, describe, expect, it } from 'vitest';
+import { BadRequestException, Controller, Get, Logger, Module, QueryMethod } from '@nestjs/common';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createApp } from '../src/index.js';
 
@@ -29,6 +29,7 @@ let app: NestFastifyApplication | undefined;
 afterEach(async () => {
   await app?.close();
   app = undefined;
+  vi.restoreAllMocks();
 });
 
 describe('createApp', () => {
@@ -54,6 +55,27 @@ describe('createApp', () => {
     expect(spec.json().components.securitySchemes.bearer).toBeDefined();
     expect(docs.statusCode).toBe(200);
     expect(docs.headers['content-security-policy']).toContain("default-src 'self'");
+  });
+
+  it('can render Fastify request logs with the standard Nest logger', async () => {
+    const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      observability: { loggerFormat: 'nest', requestLogging: true },
+    });
+    await app.init();
+
+    const response = await app.inject({ method: 'GET', url: '/hello' });
+
+    expect(response.statusCode).toBe(200);
+    expect(log.mock.calls.some(([message]) => (
+      typeof message === 'string' && message.includes('incoming request — GET /hello')
+    ))).toBe(true);
+    expect(log.mock.calls.some(([message]) => (
+      typeof message === 'string' && message.includes('request completed — status=200')
+    ))).toBe(true);
+    log.mockRestore();
   });
 
   it('uses secure headers, bounded bodies and safe error responses', async () => {

@@ -62,8 +62,10 @@ export interface HealthOptions {
 }
 
 export interface ObservabilityOptions {
-  /** Fastify/Pino logging. False removes request logging overhead. */
+  /** Fastify logging. An options object configures the default Pino JSON logger. */
   logger?: boolean | LoggerOptions;
+  /** JSON is optimal for production ingestion; nest uses Nest's readable console format. */
+  loggerFormat?: 'json' | 'nest';
   requestLogging?: boolean;
   responseTimeHeader?: boolean;
 }

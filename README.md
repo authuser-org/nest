@@ -30,6 +30,7 @@ intact while removing repetitive bootstrap code.
   rate limiting.
 - Finite request, handler, header and connection timeouts.
 - Sensitive authorization, cookie and set-cookie log fields are redacted by default.
+- JSON logging by default, with an optional standard Nest console format.
 - OpenAPI is optional at runtime. Its code is dynamically imported only when enabled.
 - HTTP QUERY (RFC 10008) passes through Nest 12/Fastify 5 and is included in CORS defaults.
 - Native ESM, strict declarations and a TypeScript 7 toolchain.

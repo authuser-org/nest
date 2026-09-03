@@ -10,6 +10,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Let the example use conventional extensionless Nest imports through CommonJS.
+- Add optional standard Nest formatting for Fastify and HTTP request logs.
 - Document ESM and CommonJS consumption and require Node.js 22.12 or newer for
   interoperable `require()` support.
 

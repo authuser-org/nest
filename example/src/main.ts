@@ -29,7 +29,7 @@ async function bootstrap(): Promise<void> {
       },
     },
     observability: {
-      logger: { level: process.env.LOG_LEVEL ?? 'info' },
+      loggerFormat: 'nest',
       requestLogging: true,
       responseTimeHeader: true,
     },

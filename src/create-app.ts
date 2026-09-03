@@ -7,6 +7,7 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { configureHttpApp } from './configure-http-app.js';
+import { NestFastifyLogger } from './nest-fastify.logger.js';
 import { resolveOptions } from './options.js';
 import type { CreateAppOptions } from './types.js';
 
@@ -16,8 +17,12 @@ export async function createApp(options: CreateAppOptions): Promise<NestFastifyA
   const resolved = resolveOptions(options);
   const network = options.network ?? {};
   validateNetworkOptions(network);
+  const loggerOptions = resolved.observability.loggerFormat === 'nest'
+    && resolved.observability.logger !== false
+    ? { loggerInstance: new NestFastifyLogger(resolved.appName) }
+    : { logger: resolved.observability.logger };
   const adapter = new FastifyAdapter({
-    logger: resolved.observability.logger,
+    ...loggerOptions,
     logController: new LogController({
       disableRequestLogging: !resolved.observability.requestLogging,
     }),
