@@ -26,9 +26,9 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateUserDto } from './create-user.dto.js';
-import { QueryUsersDto } from './query-users.dto.js';
-import { type User, UsersService } from './users.service.js';
+import { CreateUserDto } from './create-user.dto';
+import { QueryUsersDto } from './query-users.dto';
+import { type User, UsersService } from './users.service';
 
 @ApiTags('users')
 @Controller('users')

@@ -6,7 +6,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@authuser/nest"><img alt="npm" src="https://img.shields.io/npm/v/%40authuser%2Fnest?style=flat-square"></a>
   <a href="https://www.npmjs.com/package/@authuser/nest"><img alt="downloads" src="https://img.shields.io/npm/dm/%40authuser%2Fnest?style=flat-square"></a>
-  <img alt="Node 22+" src="https://img.shields.io/badge/node-%3E%3D22-339933?style=flat-square&logo=node.js&logoColor=white">
+  <img alt="Node 22.12+" src="https://img.shields.io/badge/node-%3E%3D22.12-339933?style=flat-square&logo=node.js&logoColor=white">
   <img alt="NestJS 12" src="https://img.shields.io/badge/NestJS-12-E0234E?style=flat-square&logo=nestjs&logoColor=white">
   <img alt="Fastify 5" src="https://img.shields.io/badge/Fastify-5-black?style=flat-square&logo=fastify">
   <a href="https://github.com/authuser-org/nest/blob/main/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
@@ -37,8 +37,8 @@ intact while removing repetitive bootstrap code.
 
 ## Requirements
 
-- Node.js 22 or newer (Node.js 24 LTS recommended for production)
-- An ESM project is recommended (`"type": "module"`)
+- Node.js 22.12 or newer (Node.js 24 LTS recommended for production)
+- ESM and CommonJS applications are supported
 
 ## Install
 
@@ -56,20 +56,28 @@ validation and the Fastify plugins remain included.
 ```ts
 // src/main.ts
 import { createApp } from '@authuser/nest';
-import { AppModule } from './app.module.js';
+import { AppModule } from './app.module';
 
-const app = await createApp({
-  rootModule: AppModule,
-  appName: 'users-api',
-  preset: 'secure',
-  apiPrefix: 'api',
-  observability: {
-    logger: { level: process.env.LOG_LEVEL ?? 'info' },
-  },
-});
+async function bootstrap(): Promise<void> {
+  const app = await createApp({
+    rootModule: AppModule,
+    appName: 'users-api',
+    preset: 'secure',
+    apiPrefix: 'api',
+    observability: {
+      logger: { level: process.env.LOG_LEVEL ?? 'info' },
+    },
+  });
 
-await app.listen({ port: 3000, host: '0.0.0.0' });
+  await app.listen({ port: 3000, host: '0.0.0.0' });
+}
+
+void bootstrap();
 ```
+
+The example uses CommonJS so relative imports can use the conventional Nest style
+without file extensions. Native Node ESM projects must include `.js` in relative
+imports; this is a Node.js rule rather than a requirement from this package.
 
 That application has Helmet, rate limiting, safe request IDs, strict validation,
 a 1 MiB body limit, finite timeouts and graceful shutdown hooks. Cross-origin
@@ -206,8 +214,9 @@ presets. See the [performance guide](https://github.com/authuser-org/nest/blob/m
 + import { createApp } from '@authuser/nest';
 ```
 
-The new package targets Nest 12, uses ESM, calls Swagger configuration `openApi`, and
-ships required integrations as normal dependencies. See the
+The new package targets Nest 12, publishes an ESM entry point consumable from Node.js
+22.12+ ESM and CommonJS applications, calls Swagger configuration `openApi`, and ships
+required integrations as normal dependencies. See the
 [migration guide](https://github.com/authuser-org/nest/blob/main/docs/migration.md).
 
 ## Development

@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { CreateUserDto } from './create-user.dto.js';
+import type { CreateUserDto } from './create-user.dto';
 
 export interface User {
   id: number;

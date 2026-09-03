@@ -2,9 +2,9 @@
   "name": "@authuser/nest-example",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

@@ -4,7 +4,10 @@ This application is intentionally small and keeps users in memory. It exercises
 Nest controllers and dependency injection, Fastify, strict DTO validation, Helmet,
 rate limiting, request logging, health, OpenAPI JSON and Swagger UI.
 
-It requires Node.js 22 or newer; Node.js 24 LTS is recommended.
+It requires Node.js 22.12 or newer; Node.js 24 LTS is recommended.
+The example intentionally uses CommonJS so local imports follow the conventional Nest
+style without `.js` extensions. The `@authuser/nest` package remains usable from both
+CommonJS and ESM applications on supported Node.js versions.
 
 ## Run
 

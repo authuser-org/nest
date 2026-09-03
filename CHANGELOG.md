@@ -9,7 +9,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ### Security
 
-- Require maintained Node.js 22 or newer.
+- Require Node.js 22.12 or newer.
 - Add finite connection, request, handler and header timeouts.
 - Redact sensitive authentication and cookie log fields by default.
 - Validate unsafe CORS, invalid rate limits, route collisions and network limits.

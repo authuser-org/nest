@@ -2,9 +2,10 @@
 
 ## Requirements
 
-- Upgrade the service to Node 22 or newer; Node 24 LTS is recommended.
+- Upgrade the service to Node 22.12 or newer; Node 24 LTS is recommended.
 - Upgrade Nest packages to version 12.
-- Use ESM-compatible imports and include `.js` on relative imports in NodeNext output.
+- Choose ESM or CommonJS for the application. CommonJS permits extensionless relative
+  imports; native Node ESM requires `.js` on relative imports in NodeNext output.
 
 ## API changes
 
