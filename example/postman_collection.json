@@ -1,0 +1,60 @@
+{
+  "info": {
+    "_postman_id": "90273fc0-d706-4cc4-a1cb-authusernest",
+    "name": "@authuser/nest example",
+    "description": "Requests for the local @authuser/nest example.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Application info",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api" }
+    },
+    {
+      "name": "List users",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/users" }
+    },
+    {
+      "name": "Get user",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/users/1" }
+    },
+    {
+      "name": "Create user",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Grace Hopper\",\n  \"email\": \"grace@example.com\"\n}"
+        },
+        "url": "{{baseUrl}}/api/users"
+      }
+    },
+    {
+      "name": "Invalid user (validation)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"A\",\n  \"email\": \"not-an-email\",\n  \"unexpected\": true\n}"
+        },
+        "url": "{{baseUrl}}/api/users"
+      }
+    },
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "OpenAPI",
+      "request": { "method": "GET", "url": "{{baseUrl}}/openapi.json" }
+    }
+  ]
+}
