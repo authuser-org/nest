@@ -19,7 +19,10 @@ export async function createApp(options: CreateAppOptions): Promise<NestFastifyA
   validateNetworkOptions(network);
   const loggerOptions = resolved.observability.loggerFormat === 'nest'
     && resolved.observability.logger !== false
-    ? { loggerInstance: new NestFastifyLogger(resolved.appName) }
+    ? { loggerInstance: new NestFastifyLogger(
+        resolved.appName,
+        resolved.observability.includeQueryString,
+      ) }
     : { logger: resolved.observability.logger };
   const adapter = new FastifyAdapter({
     ...loggerOptions,
@@ -37,18 +40,16 @@ export async function createApp(options: CreateAppOptions): Promise<NestFastifyA
     return503OnClosing: true,
     onProtoPoisoning: 'error',
     onConstructorPoisoning: 'error',
-    requestIdHeader: 'x-request-id',
+    // Fastify trusts requestIdHeader verbatim; validate it ourselves in genReqId.
+    requestIdHeader: false,
     genReqId: safeRequestId,
   });
   adapter.getInstance().server.headersTimeout = network.headersTimeout ?? 30_000;
 
-  const nestOptions = resolved.observability.logger === false
-    ? { ...options.nest, logger: false as const }
-    : { ...options.nest };
   const app = await NestFactory.create<NestFastifyApplication>(
     options.rootModule,
     adapter,
-    nestOptions,
+    options.nest ?? {},
   );
 
   return configureHttpApp(app, options);

@@ -10,7 +10,13 @@ async function bootstrap(): Promise<void> {
     appName: 'authuser-nest-example',
     preset: 'secure',
     apiPrefix: 'api',
-    health: true,
+    health: {
+      enabled: true,
+      check: () => ({ status: 'live' }),
+      readiness: {
+        check: () => ({ status: 'ready' }),
+      },
+    },
     openApi: {
       enabled: true,
       title: '@authuser/nest example',
@@ -39,6 +45,7 @@ async function bootstrap(): Promise<void> {
 
   console.log(`API:         http://${host}:${port}/api`);
   console.log(`Health:      http://${host}:${port}/health`);
+  console.log(`Readiness:   http://${host}:${port}/ready`);
   console.log(`OpenAPI:     http://${host}:${port}/openapi.json`);
   console.log(`Swagger UI:  http://${host}:${port}/docs`);
 }

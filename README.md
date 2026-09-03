@@ -6,6 +6,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@authuser/nest"><img alt="npm" src="https://img.shields.io/npm/v/%40authuser%2Fnest?style=flat-square"></a>
   <a href="https://www.npmjs.com/package/@authuser/nest"><img alt="downloads" src="https://img.shields.io/npm/dm/%40authuser%2Fnest?style=flat-square"></a>
+  <a href="https://github.com/authuser-org/nest/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/authuser-org/nest/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Node 22.12+" src="https://img.shields.io/badge/node-%3E%3D22.12-339933?style=flat-square&logo=node.js&logoColor=white">
   <img alt="NestJS 12" src="https://img.shields.io/badge/NestJS-12-E0234E?style=flat-square&logo=nestjs&logoColor=white">
   <img alt="Fastify 5" src="https://img.shields.io/badge/Fastify-5-black?style=flat-square&logo=fastify">
@@ -30,7 +31,10 @@ intact while removing repetitive bootstrap code.
   rate limiting.
 - Finite request, handler, header and connection timeouts.
 - Sensitive authorization, cookie and set-cookie log fields are redacted by default.
+- Query strings are omitted from logs and error paths unless explicitly enabled.
 - JSON logging by default, with an optional standard Nest console format.
+- Correlated request IDs are validated and returned in `x-request-id`.
+- Dynamic liveness and readiness checks fail closed with HTTP 503.
 - OpenAPI is optional at runtime. Its code is dynamically imported only when enabled.
 - HTTP QUERY (RFC 10008) passes through Nest 12/Fastify 5 and is included in CORS defaults.
 - Native ESM, strict declarations and a TypeScript 7 toolchain.
@@ -83,6 +87,9 @@ imports; this is a Node.js rule rather than a requirement from this package.
 That application has Helmet, rate limiting, safe request IDs, strict validation,
 a 1 MiB body limit, finite timeouts and graceful shutdown hooks. Cross-origin
 requests are not enabled implicitly.
+
+`1.x` follows Semantic Versioning: documented public exports and option behavior only
+change incompatibly in a new major version. See the [API stability policy](https://github.com/authuser-org/nest/blob/main/docs/api-stability.md).
 
 ## Presets
 
@@ -138,6 +145,25 @@ openApi: { enabled: true, preHandler: protectInternalRoute },
 health: { enabled: true, preHandler: protectInternalRoute },
 ```
 
+### Liveness and readiness
+
+```ts
+health: {
+  enabled: true,
+  check: () => ({ status: 'live' }),
+  readiness: {
+    path: '/ready',
+    check: async () => {
+      await database.ping();
+      return { status: 'ready' };
+    },
+  },
+}
+```
+
+A thrown health check is logged internally and returned as a generic HTTP 503. Do
+not include credentials, topology or personal data in successful health responses.
+
 ## Configuration examples
 
 ### CORS allowlist
@@ -179,7 +205,8 @@ await configureHttpApp(app, {
 ```
 
 Call `configureHttpApp` before `app.init()` or `app.listen()` so Fastify can register
-its plugins and routes.
+its plugins and routes. When supplying your own adapter, request-ID generation and
+network limits remain adapter responsibilities; `createApp` configures those safely.
 
 ## Public API
 
@@ -187,13 +214,16 @@ its plugins and routes.
 - `configureHttpApp(app, options)` — configure an existing Fastify-based Nest app.
 - `Public()` and `Roles(...roles)` — metadata helpers for your own guards.
 - `HttpExceptionFilter` — the default safe JSON exception filter.
+- Public TypeScript contracts for configuration, health checks and error responses.
 
 The decorators intentionally do not provide authentication. Authentication policy
 belongs to the consuming application; pretending otherwise would create a dangerous
 security boundary.
 
 See the [complete option reference](https://github.com/authuser-org/nest/blob/main/docs/configuration.md), the
-[security model](https://github.com/authuser-org/nest/blob/main/docs/security.md), and the [performance guide](https://github.com/authuser-org/nest/blob/main/docs/performance.md).
+[security model](https://github.com/authuser-org/nest/blob/main/docs/security.md), the
+[production checklist](https://github.com/authuser-org/nest/blob/main/docs/production.md), and the
+[performance guide](https://github.com/authuser-org/nest/blob/main/docs/performance.md).
 
 ## Performance notes
 
@@ -225,6 +255,8 @@ required integrations as normal dependencies. See the
 ```bash
 npm install
 npm run check
+npm run test:coverage
+npm run test:package
 ```
 
 An executable API and an importable Postman collection are available in the

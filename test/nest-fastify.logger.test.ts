@@ -15,7 +15,7 @@ describe('NestFastifyLogger', () => {
     const logger = new NestFastifyLogger('Test');
     const requestLogger = logger.child({ reqId: 'request-123' });
 
-    requestLogger.info({ req: { method: 'GET', url: '/users' } }, 'incoming request');
+    requestLogger.info({ req: { method: 'GET', url: '/users?token=secret' } }, 'incoming request');
     requestLogger.info(
       { res: { statusCode: 200 }, responseTime: 1.234 },
       'request completed',

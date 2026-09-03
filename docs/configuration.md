@@ -13,7 +13,7 @@ All settings are optional except `rootModule` when using `createApp`.
 | `versioning` | `false` | `true` for URI versioning, or Nest versioning options. |
 | `shutdownHooks` | `true` | Enable Nest shutdown signal hooks. |
 | `validation` | strict defaults | `false` or Nest `ValidationPipeOptions`. |
-| `nest` | `{}` | Extra `NestApplicationOptions` except logger. |
+| `nest` | `{}` | Native `NestApplicationOptions`, including its independent logger. |
 
 Default validation uses `whitelist: true`, `forbidNonWhitelisted: true`, and
 `transform: false`. Transformation is off because implicit coercion costs work and
@@ -71,12 +71,27 @@ known payloads rather than automatically for every API.
 
 Set `openApi: false` to guarantee the documentation integration is never loaded.
 
-## Health and observability
+## Health
 
 The full preset serves `{ "status": "ok" }` at `/health`. This is a liveness probe,
-not a dependency-readiness check. Supply a custom response or implement a Nest
-controller for deeper readiness logic. Use `health.preHandler` when the endpoint
-must not be public.
+not a dependency-readiness check. `health.check` supplies a dynamic liveness result.
+`health.readiness.check` adds a separate `/ready` endpoint for dependencies. A thrown
+check returns only `{ "status": "unavailable" }` with HTTP 503 and logs the original
+error internally. Health endpoints bypass the global rate limit so probes cannot
+evict application traffic. Use `preHandler` when an endpoint must not be public.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `health.enabled` | full preset only | Enable liveness. |
+| `health.path` | `/health` | Liveness route. |
+| `health.response` | `{ status: 'ok' }` | Static liveness response. |
+| `health.check` | none | Dynamic liveness callback. |
+| `health.preHandler` | none | Access-control hook for liveness. |
+| `health.readiness` | `false` | Object containing a required `check`. |
+| `health.readiness.path` | `/ready` | Readiness route. |
+| `health.readiness.preHandler` | none | Access-control hook for readiness. |
+
+## Observability
 
 Fastify's Pino JSON logger is enabled by default, while per-request logging is
 disabled to reduce noise and overhead. Enable it with
@@ -87,4 +102,25 @@ metadata and never serializes headers or bodies.
 
 The optional `responseTimeHeader` emits a standards-compatible `Server-Timing`
 value. Default JSON logging redacts authorization, cookie and set-cookie fields. A
-custom Pino `redact` configuration overrides those defaults.
+custom Pino `redact` configuration overrides those defaults. Likewise, a custom
+`serializers.req` replaces the safe request serializer, so redaction of URL data
+then becomes the application's responsibility.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `observability.logger` | `true` | `false`, or Pino configuration for JSON logs. |
+| `observability.loggerFormat` | `json` | `json` or readable `nest`. |
+| `observability.requestLogging` | `false` | Log request start and completion. |
+| `observability.includeQueryString` | `false` | Include potentially sensitive query strings in request logs. |
+| `observability.requestIdResponseHeader` | `x-request-id` | Correlation response header, or `false`. |
+| `observability.responseTimeHeader` | `false` | Emit `Server-Timing`. |
+
+The Fastify logger and Nest logger are independent. Disable both explicitly with
+`observability.logger: false` and `nest.logger: false`.
+
+## Error response contract
+
+Client-visible errors use the exported `HttpErrorResponse` shape: `statusCode`,
+`error`, `message`, `requestId`, and `path`. Query strings never appear in `path`.
+Every status from 500 through 599 receives the generic message `Internal server
+error`; the original exception is available only in server logs.

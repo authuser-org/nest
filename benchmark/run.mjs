@@ -32,6 +32,7 @@ const minimal = await createApp({
   validation: false,
   shutdownHooks: false,
   observability: { logger: false },
+  nest: { logger: false },
 });
 await minimal.listen({ host: '127.0.0.1', port: 0 });
 
@@ -42,6 +43,7 @@ const secure = await createApp({
   shutdownHooks: false,
   security: { rateLimit: { max: 100_000_000, timeWindow: '1 minute' } },
   observability: { logger: false },
+  nest: { logger: false },
 });
 await secure.listen({ host: '127.0.0.1', port: 0 });
 

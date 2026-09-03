@@ -2,7 +2,7 @@ import type { LoggerOptions } from 'pino';
 import type rateLimit from '@fastify/rate-limit';
 import type { Type, ValidationPipeOptions, VersioningOptions } from '@nestjs/common';
 import type { NestApplicationOptions } from '@nestjs/common/interfaces/nest-application-options.interface';
-import type { preHandlerHookHandler } from 'fastify';
+import type { FastifyRequest, preHandlerHookHandler } from 'fastify';
 
 export type SecurityPreset = 'minimal' | 'secure' | 'full';
 
@@ -57,7 +57,21 @@ export interface HealthOptions {
   enabled?: boolean;
   path?: string;
   response?: Readonly<Record<string, unknown>>;
+  /** Dynamic liveness check. Throwing produces a safe HTTP 503 response. */
+  check?: HealthCheck;
   /** Fastify hook for restricting the health route. */
+  preHandler?: preHandlerHookHandler;
+  /** Optional dependency-readiness endpoint. */
+  readiness?: false | ReadinessOptions;
+}
+
+export type HealthCheck = (
+  request: FastifyRequest,
+) => Readonly<Record<string, unknown>> | Promise<Readonly<Record<string, unknown>>>;
+
+export interface ReadinessOptions {
+  path?: string;
+  check: HealthCheck;
   preHandler?: preHandlerHookHandler;
 }
 
@@ -67,7 +81,19 @@ export interface ObservabilityOptions {
   /** JSON is optimal for production ingestion; nest uses Nest's readable console format. */
   loggerFormat?: 'json' | 'nest';
   requestLogging?: boolean;
+  /** Query strings may contain secrets or personal data and are omitted by default. */
+  includeQueryString?: boolean;
+  /** Response correlation header. False disables it. */
+  requestIdResponseHeader?: string | false;
   responseTimeHeader?: boolean;
+}
+
+export interface HttpErrorResponse {
+  statusCode: number;
+  error: string;
+  message: unknown;
+  requestId: string;
+  path: string;
 }
 
 export interface NetworkOptions {
@@ -99,5 +125,6 @@ export interface ConfigureHttpAppOptions {
 export interface CreateAppOptions extends ConfigureHttpAppOptions {
   rootModule: Type<unknown>;
   network?: NetworkOptions;
-  nest?: Omit<NestApplicationOptions, 'logger'>;
+  /** Native Nest factory options, including an independent Nest logger. */
+  nest?: NestApplicationOptions;
 }

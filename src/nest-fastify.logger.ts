@@ -18,16 +18,22 @@ export class NestFastifyLogger implements FastifyBaseLogger {
 
   constructor(
     private readonly context: string,
+    private readonly includeQueryString = false,
     private readonly bindings: Bindings = {},
     private readonly logger = new Logger(context),
   ) {}
 
   child(bindings: Bindings): FastifyBaseLogger {
-    return new NestFastifyLogger(this.context, { ...this.bindings, ...bindings }, this.logger);
+    return new NestFastifyLogger(
+      this.context,
+      this.includeQueryString,
+      { ...this.bindings, ...bindings },
+      this.logger,
+    );
   }
 
   private write(level: LogMethod, args: unknown[]): void {
-    const message = formatLogMessage(args, this.bindings);
+    const message = formatLogMessage(args, this.bindings, this.includeQueryString);
     switch (level) {
       case 'error':
         this.logger.error(message);
@@ -50,7 +56,11 @@ export class NestFastifyLogger implements FastifyBaseLogger {
   }
 }
 
-function formatLogMessage(args: unknown[], bindings: Bindings): string {
+function formatLogMessage(
+  args: unknown[],
+  bindings: Bindings,
+  includeQueryString: boolean,
+): string {
   const data = isRecord(args[0]) ? args[0] : undefined;
   const text = args.find((value): value is string => typeof value === 'string') ?? 'Fastify event';
   const details: string[] = [];
@@ -59,7 +69,9 @@ function formatLogMessage(args: unknown[], bindings: Bindings): string {
   const error = data && isRecord(data.err) ? data.err : undefined;
 
   if (typeof request?.method === 'string') details.push(request.method);
-  if (typeof request?.url === 'string') details.push(request.url);
+  if (typeof request?.url === 'string') {
+    details.push(includeQueryString ? request.url : request.url.split('?', 1)[0] ?? '');
+  }
   if (typeof response?.statusCode === 'number') details.push(`status=${response.statusCode}`);
   if (typeof data?.responseTime === 'number') details.push(`duration=${data.responseTime.toFixed(2)}ms`);
   if (typeof bindings.reqId === 'string') details.push(`requestId=${bindings.reqId}`);

@@ -5,6 +5,37 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-03
+
+### Added
+
+- Establish and document the stable 1.x public API contract.
+- Add dynamic liveness and dependency-readiness checks with safe 503 failures.
+- Return validated correlation IDs through a configurable response header.
+- Verify the packed artifact from clean ESM and CommonJS consumers.
+- Add cross-platform CI, release automation, contribution policies, a threat model,
+  and a production checklist.
+
+### Security
+
+- Hide every 5xx exception message and log the original cause server-side.
+- Remove query strings from error paths and request logs by default.
+- Validate incoming request IDs instead of trusting Fastify's header passthrough.
+- Reject invalid internal paths, overlapping Swagger routes, and invalid correlation
+  header names.
+- Add tests for JSON prototype/constructor poisoning, body limits, handler deadlines,
+  shared rate-limit stores, and sensitive-data exposure.
+
+### Changed
+
+- Make Nest and Fastify logging independently configurable. Setting
+  `observability.logger: false` no longer disables the Nest logger; use
+  `nest.logger: false` for that behavior.
+- Add an explicit CommonJS export condition while retaining the native ESM build.
+- Mark the entry point side effect so bundlers preserve `reflect-metadata` setup.
+- Raise enforced coverage thresholds to 95% statements/lines/functions and 85%
+  branches.
+
 ## [0.2.2] - 2026-09-03
 
 ### Added

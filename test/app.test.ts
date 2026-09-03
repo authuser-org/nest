@@ -1,7 +1,8 @@
-import { BadRequestException, Controller, Get, Logger, Module, QueryMethod } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Logger, Module, Post, QueryMethod } from '@nestjs/common';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { createApp } from '../src/index.js';
+import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { configureHttpApp, createApp } from '../src/index.js';
 
 class TestController {
   hello(): { hello: string } {
@@ -15,11 +16,28 @@ class TestController {
   search(): { supported: boolean } {
     return { supported: true };
   }
+
+  boom(): never {
+    throw new Error('Database password must never reach the client');
+  }
+
+  echo(input: unknown): unknown {
+    return input;
+  }
+
+  async slow(): Promise<{ completed: boolean }> {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return { completed: true };
+  }
 }
 Controller()(TestController);
 applyGet(TestController, 'hello', '/hello');
 applyGet(TestController, 'fail', '/fail');
 applyRoute(QueryMethod('/search'), TestController, 'search');
+applyGet(TestController, 'boom', '/boom');
+applyRoute(Post('/echo'), TestController, 'echo');
+Body()(TestController.prototype, 'echo', 0);
+applyGet(TestController, 'slow', '/slow');
 
 class TestModule {}
 Module({ controllers: [TestController] })(TestModule);
@@ -33,6 +51,25 @@ afterEach(async () => {
 });
 
 describe('createApp', () => {
+  it('configures an existing Nest Fastify application', async () => {
+    app = await NestFactory.create<NestFastifyApplication>(
+      TestModule,
+      new FastifyAdapter({ logger: false }),
+      { logger: false },
+    );
+    await configureHttpApp(app, {
+      preset: 'minimal',
+      health: true,
+      observability: { requestIdResponseHeader: 'x-correlation-id' },
+    });
+    await app.init();
+
+    const response = await app.inject({ method: 'GET', url: '/health' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['x-correlation-id']).toBe('req-1');
+  });
+
   it('serves Nest routes, health and OpenAPI without extra setup', async () => {
     app = await createApp({
       rootModule: TestModule,
@@ -91,6 +128,7 @@ describe('createApp', () => {
     const response = await app.inject({ method: 'GET', url: '/fail', headers: { 'x-request-id': 'test-123' } });
     expect(response.statusCode).toBe(400);
     expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-request-id']).toBe('test-123');
     expect(response.json()).toMatchObject({ message: 'Invalid input', requestId: 'test-123' });
 
     const preflight = await app.inject({
@@ -125,6 +163,92 @@ describe('createApp', () => {
     });
     expect(queryRequest.statusCode).toBe(200);
     expect(queryRequest.json()).toEqual({ supported: true });
+
+    const oversized = await app.inject({
+      method: 'POST',
+      url: '/echo',
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ value: 'this payload is larger than sixteen bytes' }),
+    });
+    expect(oversized.statusCode).toBe(413);
+  });
+
+  it('rejects prototype and constructor poisoning payloads', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      observability: { logger: false },
+      nest: { logger: false },
+    });
+    await app.init();
+
+    const prototypePayload = await app.inject({
+      method: 'POST',
+      url: '/echo',
+      headers: { 'content-type': 'application/json' },
+      payload: '{"__proto__":{"polluted":true}}',
+    });
+    const constructorPayload = await app.inject({
+      method: 'POST',
+      url: '/echo',
+      headers: { 'content-type': 'application/json' },
+      payload: '{"constructor":{"prototype":{"polluted":true}}}',
+    });
+
+    expect(prototypePayload.statusCode).toBe(400);
+    expect(constructorPayload.statusCode).toBe(400);
+    expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
+  });
+
+  it('hides internal errors, strips query strings and replaces unsafe request IDs', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      observability: { logger: false },
+    });
+    await app.init();
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/boom?token=must-not-leak',
+      headers: { 'x-request-id': 'invalid request id with spaces' },
+    });
+    const body = response.json();
+
+    expect(response.statusCode).toBe(500);
+    expect(body.message).toBe('Internal server error');
+    expect(JSON.stringify(body)).not.toContain('Database password');
+    expect(JSON.stringify(body)).not.toContain('must-not-leak');
+    expect(body.path).toBe('/boom');
+    expect(body.requestId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(response.headers['x-request-id']).toBe(body.requestId);
+  });
+
+  it('supports dynamic liveness and readiness checks with safe failures', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      health: {
+        enabled: true,
+        check: () => ({ status: 'live' }),
+        readiness: {
+          check: () => {
+            throw new Error('Database connection details');
+          },
+        },
+      },
+      observability: { logger: false },
+    });
+    await app.init();
+
+    const live = await app.inject({ method: 'GET', url: '/health' });
+    const ready = await app.inject({ method: 'GET', url: '/ready' });
+
+    expect(live.statusCode).toBe(200);
+    expect(live.json()).toEqual({ status: 'live' });
+    expect(ready.statusCode).toBe(503);
+    expect(ready.json()).toEqual({ status: 'unavailable' });
+    expect(JSON.stringify(ready.json())).not.toContain('Database');
   });
 
   it('protects internal routes with a pre-handler', async () => {
@@ -168,12 +292,61 @@ describe('createApp', () => {
     expect((await app.inject({ method: 'GET', url: '/hello' })).statusCode).toBe(429);
   });
 
+  it('accepts a shared rate-limit store for multi-replica deployments', async () => {
+    const hits = new Map<string, number>();
+    class SharedStore {
+      incr(
+        key: string,
+        callback: (error: Error | null, result?: { current: number; ttl: number }) => void,
+      ): void {
+        const current = (hits.get(key) ?? 0) + 1;
+        hits.set(key, current);
+        callback(null, { current, ttl: 60_000 });
+      }
+
+      child(): SharedStore {
+        return this;
+      }
+    }
+
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'secure',
+      security: {
+        rateLimit: { max: 1, timeWindow: '1 minute', store: SharedStore as never },
+      },
+      observability: { logger: false },
+      nest: { logger: false },
+    });
+    await app.init();
+
+    expect((await app.inject({ method: 'GET', url: '/hello' })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'GET', url: '/hello' })).statusCode).toBe(429);
+    expect(hits.size).toBeGreaterThan(0);
+  });
+
   it('rejects invalid network limits before bootstrapping Nest', async () => {
     await expect(createApp({
       rootModule: TestModule,
       network: { requestTimeout: 0 },
       observability: { logger: false },
     })).rejects.toThrow(/requestTimeout/);
+  });
+
+  it('terminates handlers that exceed the configured deadline', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      network: { handlerTimeout: 5 },
+      observability: { logger: false },
+      nest: { logger: false },
+    });
+    await app.init();
+
+    const response = await app.inject({ method: 'GET', url: '/slow' });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json().message).toBe('Internal server error');
   });
 
   it('supports response compression and Server-Timing as explicit opt-ins', async () => {
@@ -194,16 +367,37 @@ describe('createApp', () => {
     expect(response.headers['content-encoding']).toBe('gzip');
     expect(response.headers['server-timing']).toMatch(/^app;dur=\d+\.\d{2}$/);
   });
+
+  it('listens on an ephemeral port and shuts down cleanly', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      observability: { logger: false },
+      nest: { logger: false },
+    });
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    const address = app.getHttpServer().address();
+    if (!address || typeof address === 'string') throw new Error('Expected a TCP address');
+    const url = `http://127.0.0.1:${address.port}/hello`;
+
+    const response = await fetch(url);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ hello: 'world' });
+
+    await app.close();
+    app = undefined;
+    await expect(fetch(url)).rejects.toThrow();
+  });
 });
 
-function applyGet(target: object, method: 'hello' | 'fail', path: string): void {
+function applyGet(target: object, method: 'hello' | 'fail' | 'boom' | 'slow', path: string): void {
   applyRoute(Get(path), target, method);
 }
 
 function applyRoute(
   decorator: MethodDecorator,
   target: object,
-  method: 'hello' | 'fail' | 'search',
+  method: 'hello' | 'fail' | 'search' | 'boom' | 'echo' | 'slow',
 ): void {
   const descriptor = Object.getOwnPropertyDescriptor(target.prototype, method);
   if (!descriptor) throw new Error(`Missing ${method} descriptor`);

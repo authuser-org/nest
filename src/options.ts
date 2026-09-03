@@ -3,6 +3,7 @@ import type {
   ConfigureHttpAppOptions,
   CorsOptions,
   HealthOptions,
+  HealthCheck,
   OpenApiOptions,
   RateLimitOptions,
   SecurityPreset,
@@ -22,7 +23,18 @@ export interface ResolvedOptions {
   };
   compression: Required<CompressionOptions>;
   openApi: Required<Omit<OpenApiOptions, 'preHandler'>> & Pick<OpenApiOptions, 'preHandler'>;
-  health: Required<Omit<HealthOptions, 'preHandler'>> & Pick<HealthOptions, 'preHandler'>;
+  health: {
+    enabled: boolean;
+    path: string;
+    response: Readonly<Record<string, unknown>>;
+    check?: HealthCheck;
+    preHandler?: HealthOptions['preHandler'];
+    readiness: false | {
+      path: string;
+      check: HealthCheck;
+      preHandler?: HealthOptions['preHandler'];
+    };
+  };
   observability: Required<NonNullable<ConfigureHttpAppOptions['observability']>>;
   shutdownHooks: boolean;
 }
@@ -36,6 +48,10 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
   const compressionInput = typeof options.compression === 'object' ? options.compression : {};
   const openApiInput = typeof options.openApi === 'object' ? options.openApi : {};
   const healthInput = typeof options.health === 'object' ? options.health : {};
+  const readinessInput = healthInput.readiness === false || healthInput.readiness === undefined
+    ? false
+    : healthInput.readiness;
+  const includeQueryString = options.observability?.includeQueryString ?? false;
 
   const openApiEnabled = typeof options.openApi === 'boolean'
     ? options.openApi
@@ -99,12 +115,22 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
       enabled: typeof options.health === 'boolean' ? options.health : healthInput.enabled ?? isFull,
       path: normalizePath(healthInput.path ?? '/health'),
       response: healthInput.response ?? { status: 'ok' },
+      ...(healthInput.check ? { check: healthInput.check } : {}),
       ...(healthInput.preHandler ? { preHandler: healthInput.preHandler } : {}),
+      readiness: readinessInput === false
+        ? false
+        : {
+            path: normalizePath(readinessInput.path ?? '/ready'),
+            check: readinessInput.check,
+            ...(readinessInput.preHandler ? { preHandler: readinessInput.preHandler } : {}),
+          },
     },
     observability: {
-      logger: resolveLogger(options.observability?.logger ?? true),
+      logger: resolveLogger(options.observability?.logger ?? true, includeQueryString),
       loggerFormat: options.observability?.loggerFormat ?? 'json',
       requestLogging: options.observability?.requestLogging ?? false,
+      includeQueryString,
+      requestIdResponseHeader: options.observability?.requestIdResponseHeader ?? 'x-request-id',
       responseTimeHeader: options.observability?.responseTimeHeader ?? false,
     },
     shutdownHooks: options.shutdownHooks ?? true,
@@ -126,17 +152,51 @@ const SENSITIVE_LOG_PATHS = [
   'res.headers["set-cookie"]',
 ];
 
-function resolveLogger(logger: NonNullable<NonNullable<ConfigureHttpAppOptions['observability']>['logger']>) {
+function resolveLogger(
+  logger: NonNullable<NonNullable<ConfigureHttpAppOptions['observability']>['logger']>,
+  includeQueryString: boolean,
+) {
   if (logger === false) return false;
+  const requestSerializer = (request: Record<string, unknown>) => ({
+    method: request.method,
+    url: safePath(typeof request.url === 'string' ? request.url : '', includeQueryString),
+    host: request.host,
+    remoteAddress: request.ip,
+  });
   if (logger === true) {
-    return { redact: { paths: SENSITIVE_LOG_PATHS, censor: '[REDACTED]' } };
+    return {
+      redact: { paths: SENSITIVE_LOG_PATHS, censor: '[REDACTED]' },
+      serializers: { req: requestSerializer },
+    };
   }
-  return logger.redact === undefined
-    ? { ...logger, redact: { paths: SENSITIVE_LOG_PATHS, censor: '[REDACTED]' } }
-    : logger;
+  return {
+    ...logger,
+    ...(logger.redact === undefined
+      ? { redact: { paths: SENSITIVE_LOG_PATHS, censor: '[REDACTED]' } }
+      : {}),
+    serializers: {
+      req: requestSerializer,
+      ...logger.serializers,
+    },
+  };
 }
 
 function validateResolvedOptions(options: ResolvedOptions): void {
+  if (options.appName.trim().length === 0 || options.appName.length > 128) {
+    throw new TypeError('Application name must contain 1 to 128 characters');
+  }
+  if (options.apiPrefix !== undefined && (
+    options.apiPrefix.length > 1_024
+    || options.apiPrefix.includes('?')
+    || options.apiPrefix.includes('#')
+    || options.apiPrefix.includes('\0')
+  )) {
+    throw new TypeError('API prefix must be a valid URL path prefix');
+  }
+  if (!Number.isSafeInteger(options.compression.threshold) || options.compression.threshold < 0) {
+    throw new TypeError('Compression threshold must be a non-negative safe integer');
+  }
+
   const cors = options.security.cors;
   if (cors !== false && cors.credentials === true && cors.origin === true) {
     throw new TypeError('CORS credentials cannot be combined with an unrestricted origin');
@@ -146,13 +206,33 @@ function validateResolvedOptions(options: ResolvedOptions): void {
     options.health.enabled ? options.health.path : undefined,
     options.openApi.enabled && options.openApi.json ? options.openApi.jsonPath : undefined,
     options.openApi.enabled && options.openApi.ui ? options.openApi.uiPath : undefined,
+    options.health.readiness !== false ? options.health.readiness.path : undefined,
   ].filter((path): path is string => path !== undefined);
-  if (new Set(paths).size !== paths.length) {
+  if (paths.some((path, index) => paths.some((other, otherIndex) => (
+    index !== otherIndex && (path === other || path.startsWith(`${other}/`) || other.startsWith(`${path}/`))
+  )))) {
     throw new TypeError('Health, OpenAPI JSON and Swagger UI paths must be unique');
+  }
+
+  for (const path of paths) validateInternalPath(path);
+
+  const requestIdHeader = options.observability.requestIdResponseHeader;
+  if (requestIdHeader !== false && !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(requestIdHeader)) {
+    throw new TypeError('Request ID response header must be a valid HTTP header name');
   }
 
   const rateLimit = options.security.rateLimit;
   if (rateLimit !== false && typeof rateLimit.max === 'number' && (!Number.isFinite(rateLimit.max) || rateLimit.max <= 0)) {
     throw new TypeError('Rate limit max must be a positive number');
   }
+}
+
+function validateInternalPath(path: string): void {
+  if (path.length > 2_048 || path.includes('?') || path.includes('#') || path.includes('\0')) {
+    throw new TypeError(`Invalid internal route path: ${path}`);
+  }
+}
+
+function safePath(url: string, includeQueryString: boolean): string {
+  return includeQueryString ? url : url.split('?', 1)[0] ?? '';
 }

@@ -9,11 +9,14 @@ The secure preset establishes a baseline, not a complete application security mo
 - A one MiB default request-body limit.
 - Finite connection, request, handler and header timeouts.
 - Rate limiting by client IP.
-- Request IDs restricted to 128 safe characters before log propagation.
-- Generic internal errors; unexpected exceptions are logged server-side only.
+- `createApp` request IDs restricted to 128 safe characters before log propagation.
+- Correlation IDs returned to clients in a configurable response header.
+- Generic 5xx errors; unexpected exceptions are logged server-side only.
 - CORS disabled until an allowlist is configured.
 - Sensitive authentication and cookie log fields redacted by default.
+- Query strings excluded from default request logs and error response paths.
 - Optional pre-handler protection for documentation and health routes.
+- Dynamic readiness checks that fail closed without exposing dependency errors.
 
 ## Application responsibilities
 
@@ -26,6 +29,9 @@ The secure preset establishes a baseline, not a complete application security mo
 - Use TLS at the load balancer or application edge.
 - Keep Node and dependencies patched and review `npm audit` output.
 - Avoid exposing Swagger UI and detailed readiness data publicly.
+- Keep credentials, tokens and personal data out of URL query parameters.
+- Preserve the default request serializer, or redact equivalent data in a custom
+  Pino `serializers.req` implementation.
 - Add CSRF protection when authentication relies on ambient cookies or sessions.
 
 `Public()` and `Roles()` only attach metadata. They do nothing until an application

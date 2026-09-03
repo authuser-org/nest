@@ -44,7 +44,8 @@ Import [`postman_collection.json`](./postman_collection.json), or call:
 | `PUT` | `http://127.0.0.1:3000/api/users/1` | Replace a user |
 | `DELETE` | `http://127.0.0.1:3000/api/users/1` | Delete a user (`204`) |
 | `OPTIONS` | `http://127.0.0.1:3000/api/users` | CORS preflight (`204`) |
-| `GET` | `http://127.0.0.1:3000/health` | `{ "status": "ok" }` |
+| `GET` | `http://127.0.0.1:3000/health` | `{ "status": "live" }` |
+| `GET` | `http://127.0.0.1:3000/ready` | `{ "status": "ready" }` |
 | `GET` | `http://127.0.0.1:3000/openapi.json` | OpenAPI document |
 
 POST body:

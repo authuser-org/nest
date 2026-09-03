@@ -1,10 +1,11 @@
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { HttpExceptionFilter } from './http-exception.filter.js';
 import { registerOpenApi } from './openapi.js';
 import { resolveOptions } from './options.js';
 import type { ConfigureHttpAppOptions } from './types.js';
+import type { HealthCheck } from './types.js';
 
 export async function configureHttpApp(
   app: NestFastifyApplication,
@@ -64,13 +65,42 @@ export async function configureHttpApp(
     });
   }
 
+  if (options.observability.requestIdResponseHeader !== false) {
+    const header = options.observability.requestIdResponseHeader;
+    fastify.addHook('onRequest', async (request, reply) => {
+      reply.header(header, request.id);
+    });
+  }
+
   if (options.health.enabled) {
     fastify.get(options.health.path, {
       config: { rateLimit: false },
       ...(options.health.preHandler ? { preHandler: options.health.preHandler } : {}),
-    }, async (_request, reply) => reply.send(options.health.response));
+    }, healthHandler(options.health.check, options.health.response));
+  }
+
+  if (options.health.readiness !== false) {
+    const readiness = options.health.readiness;
+    fastify.get(readiness.path, {
+      config: { rateLimit: false },
+      ...(readiness.preHandler ? { preHandler: readiness.preHandler } : {}),
+    }, healthHandler(readiness.check, { status: 'ready' }));
   }
 
   await registerOpenApi(app, fastify, options.openApi);
   return app;
+}
+
+function healthHandler(
+  check: HealthCheck | undefined,
+  fallback: Readonly<Record<string, unknown>>,
+) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      return reply.send(check ? await check(request) : fallback);
+    } catch (error) {
+      request.log.error({ err: error }, 'Health check failed');
+      return reply.status(503).send({ status: 'unavailable' });
+    }
+  };
 }

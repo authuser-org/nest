@@ -13,6 +13,7 @@ export class AppController {
       endpoints: {
         users: '/api/users',
         health: '/health',
+        readiness: '/ready',
         openapi: '/openapi.json',
         swagger: '/docs',
       },

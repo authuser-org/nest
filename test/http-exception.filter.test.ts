@@ -46,4 +46,34 @@ describe('HttpExceptionFilter', () => {
       message: 'Rate limit exceeded',
     }));
   });
+
+  it('never exposes 5xx messages or query strings and logs the cause', () => {
+    const send = vi.fn();
+    const status = vi.fn(() => ({ send }));
+    const error = vi.fn();
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => ({ status }),
+        getRequest: () => ({
+          id: 'internal-error',
+          url: '/users?token=secret',
+          log: { error },
+        }),
+      }),
+    };
+
+    new HttpExceptionFilter().catch(
+      { statusCode: 503, message: 'Database password' },
+      host as never,
+    );
+
+    expect(error).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledWith({
+      statusCode: 503,
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Internal server error',
+      requestId: 'internal-error',
+      path: '/users',
+    });
+  });
 });

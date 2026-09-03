@@ -24,3 +24,15 @@ application and this package share one framework instance.
 `AuthuserModule` and `AUTHUSER_OPTIONS` were removed because their configuration was
 not connected to adapter creation. Configure the application exclusively through
 `createApp` or `configureHttpApp`.
+
+## Migrating from 0.x to 1.x
+
+- `observability.logger: false` disables Fastify logging only. Use
+  `nest.logger: false` when Nest logs must also be disabled.
+- Responses include `x-request-id` by default. Set
+  `observability.requestIdResponseHeader: false` to opt out.
+- Request logs omit query strings by default. Set
+  `observability.includeQueryString: true` only after reviewing data exposure.
+- All 5xx response messages are generic and error paths omit query strings.
+- Internal route paths must be unique and cannot contain query strings or fragments.
+- `health.check` and `health.readiness` provide dynamic probe callbacks.

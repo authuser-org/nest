@@ -6,6 +6,7 @@ import {
   type ExceptionFilter,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { HttpErrorResponse } from './types.js';
 
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -16,19 +17,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const status = httpException?.getStatus() ?? HttpStatus.INTERNAL_SERVER_ERROR;
     const response = httpException?.getResponse();
     const details = typeof response === 'object' && response !== null ? response : {};
-    const message = typeof response === 'string'
-      ? response
-      : getMessage(details) ?? (status === 500 ? 'Internal server error' : 'Request failed');
+    const message = status >= 500
+      ? 'Internal server error'
+      : typeof response === 'string'
+        ? response
+        : getMessage(details) ?? 'Request failed';
 
-    if (status === 500) request.log.error({ err: exception }, 'Unhandled request error');
+    if (status >= 500) request.log.error({ err: exception }, 'Unhandled request error');
 
-    void reply.status(status).send({
+    const body: HttpErrorResponse = {
       statusCode: status,
       error: HttpStatus[status] ?? 'Error',
       message,
       requestId: request.id,
-      path: request.url,
-    });
+      path: request.url.split('?', 1)[0] ?? request.url,
+    };
+    void reply.status(status).send(body);
   }
 }
 
