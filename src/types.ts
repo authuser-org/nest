@@ -1,7 +1,8 @@
 import type { LoggerOptions } from 'pino';
+import type rateLimit from '@fastify/rate-limit';
 import type { Type, ValidationPipeOptions, VersioningOptions } from '@nestjs/common';
 import type { NestApplicationOptions } from '@nestjs/common/interfaces/nest-application-options.interface';
-import type { FastifyRequest } from 'fastify';
+import type { preHandlerHookHandler } from 'fastify';
 
 export type SecurityPreset = 'minimal' | 'secure' | 'full';
 
@@ -18,14 +19,9 @@ export interface CorsOptions {
   strictPreflight?: boolean;
 }
 
-export interface RateLimitOptions {
+export type RateLimitOptions = Omit<rateLimit.RateLimitPluginOptions, 'global'> & {
   enabled?: boolean;
-  max?: number;
-  timeWindow?: number | string;
-  ban?: number;
-  allowList?: string[];
-  keyGenerator?: (request: FastifyRequest) => string;
-}
+};
 
 export interface SecurityOptions {
   helmet?: boolean;
@@ -53,12 +49,16 @@ export interface OpenApiOptions {
   ui?: boolean;
   uiPath?: string;
   bearerAuth?: boolean;
+  /** Fastify hook for authenticating or restricting the JSON and UI routes. */
+  preHandler?: preHandlerHookHandler;
 }
 
 export interface HealthOptions {
   enabled?: boolean;
   path?: string;
   response?: Readonly<Record<string, unknown>>;
+  /** Fastify hook for restricting the health route. */
+  preHandler?: preHandlerHookHandler;
 }
 
 export interface ObservabilityOptions {
@@ -74,7 +74,10 @@ export interface NetworkOptions {
   maxParamLength?: number;
   connectionTimeout?: number;
   requestTimeout?: number;
+  handlerTimeout?: number;
+  headersTimeout?: number;
   keepAliveTimeout?: number;
+  maxRequestsPerSocket?: number;
 }
 
 export interface ConfigureHttpAppOptions {

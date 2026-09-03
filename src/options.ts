@@ -21,8 +21,8 @@ export interface ResolvedOptions {
     rateLimit: false | Required<Pick<RateLimitOptions, 'enabled' | 'max' | 'timeWindow' | 'ban'>> & RateLimitOptions;
   };
   compression: Required<CompressionOptions>;
-  openApi: Required<OpenApiOptions>;
-  health: Required<HealthOptions>;
+  openApi: Required<Omit<OpenApiOptions, 'preHandler'>> & Pick<OpenApiOptions, 'preHandler'>;
+  health: Required<Omit<HealthOptions, 'preHandler'>> & Pick<HealthOptions, 'preHandler'>;
   observability: Required<NonNullable<ConfigureHttpAppOptions['observability']>>;
   shutdownHooks: boolean;
 }
@@ -37,6 +37,9 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
   const openApiInput = typeof options.openApi === 'object' ? options.openApi : {};
   const healthInput = typeof options.health === 'object' ? options.health : {};
 
+  const openApiEnabled = typeof options.openApi === 'boolean'
+    ? options.openApi
+    : openApiInput.enabled ?? openApiInput.ui ?? isFull;
   const resolved: ResolvedOptions = {
     appName: options.appName ?? 'nest-api',
     preset,
@@ -81,7 +84,7 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
       encodings: compressionInput.encodings ?? ['br', 'gzip', 'deflate'],
     },
     openApi: {
-      enabled: typeof options.openApi === 'boolean' ? options.openApi : openApiInput.enabled ?? isFull,
+      enabled: openApiEnabled,
       title: openApiInput.title ?? options.appName ?? 'Nest API',
       description: openApiInput.description ?? '',
       version: openApiInput.version ?? '1.0.0',
@@ -90,14 +93,16 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
       ui: openApiInput.ui ?? false,
       uiPath: normalizePath(openApiInput.uiPath ?? '/docs'),
       bearerAuth: openApiInput.bearerAuth ?? false,
+      ...(openApiInput.preHandler ? { preHandler: openApiInput.preHandler } : {}),
     },
     health: {
       enabled: typeof options.health === 'boolean' ? options.health : healthInput.enabled ?? isFull,
       path: normalizePath(healthInput.path ?? '/health'),
       response: healthInput.response ?? { status: 'ok' },
+      ...(healthInput.preHandler ? { preHandler: healthInput.preHandler } : {}),
     },
     observability: {
-      logger: options.observability?.logger ?? true,
+      logger: resolveLogger(options.observability?.logger ?? true),
       requestLogging: options.observability?.requestLogging ?? false,
       responseTimeHeader: options.observability?.responseTimeHeader ?? false,
     },
@@ -105,10 +110,48 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
   };
 
   if (options.apiPrefix !== undefined) resolved.apiPrefix = options.apiPrefix.replace(/^\/+|\/+$/g, '');
+  validateResolvedOptions(resolved);
   return resolved;
 }
 
 function normalizePath(path: string): string {
   const normalized = `/${path}`.replace(/\/+/g, '/').replace(/\/$/, '');
   return normalized || '/';
+}
+
+const SENSITIVE_LOG_PATHS = [
+  'req.headers.authorization',
+  'req.headers.cookie',
+  'res.headers["set-cookie"]',
+];
+
+function resolveLogger(logger: NonNullable<NonNullable<ConfigureHttpAppOptions['observability']>['logger']>) {
+  if (logger === false) return false;
+  if (logger === true) {
+    return { redact: { paths: SENSITIVE_LOG_PATHS, censor: '[REDACTED]' } };
+  }
+  return logger.redact === undefined
+    ? { ...logger, redact: { paths: SENSITIVE_LOG_PATHS, censor: '[REDACTED]' } }
+    : logger;
+}
+
+function validateResolvedOptions(options: ResolvedOptions): void {
+  const cors = options.security.cors;
+  if (cors !== false && cors.credentials === true && cors.origin === true) {
+    throw new TypeError('CORS credentials cannot be combined with an unrestricted origin');
+  }
+
+  const paths = [
+    options.health.enabled ? options.health.path : undefined,
+    options.openApi.enabled && options.openApi.json ? options.openApi.jsonPath : undefined,
+    options.openApi.enabled && options.openApi.ui ? options.openApi.uiPath : undefined,
+  ].filter((path): path is string => path !== undefined);
+  if (new Set(paths).size !== paths.length) {
+    throw new TypeError('Health, OpenAPI JSON and Swagger UI paths must be unique');
+  }
+
+  const rateLimit = options.security.rateLimit;
+  if (rateLimit !== false && typeof rateLimit.max === 'number' && (!Number.isFinite(rateLimit.max) || rateLimit.max <= 0)) {
+    throw new TypeError('Rate limit max must be a positive number');
+  }
 }

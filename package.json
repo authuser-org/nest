@@ -1,6 +1,6 @@
 {
   "name": "@authuser/nest",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Secure, high-performance NestJS foundation powered by Fastify",
   "keywords": [
     "nestjs",
@@ -31,7 +31,7 @@
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public",
@@ -43,6 +43,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "benchmark": "npm run build && node benchmark/run.mjs",
     "prepack": "npm run clean && npm run build",
     "check": "npm run typecheck && npm test && npm run build && npm pack --dry-run"
   },
@@ -53,26 +54,41 @@
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/swagger": "^9.8.1",
     "@fastify/swagger-ui": "^6.1.1",
-    "@nestjs/common": "^12.0.1",
-    "@nestjs/core": "^12.0.1",
-    "@nestjs/platform-fastify": "^12.0.1",
     "@nestjs/swagger": "^12.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
-    "fastify": "^5.12.1",
     "pino": "^10.3.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
+  "peerDependencies": {
+    "@nestjs/common": "^12.0.0",
+    "@nestjs/core": "^12.0.0",
+    "@nestjs/platform-fastify": "^12.0.0",
+    "fastify": "^5.12.0"
+  },
   "devDependencies": {
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/platform-fastify": "^12.0.1",
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.0.0",
+    "fastify": "^5.12.1",
     "rimraf": "^6.0.0",
     "typescript": "^7.0.2",
     "vitest": "^4.0.0"
   },
   "directories": {
     "doc": "docs",
+    "example": "example",
     "test": "test"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/authuser-org/nest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/authuser-org/nest/issues"
+  },
+  "homepage": "https://github.com/authuser-org/nest#readme"
 }

@@ -24,4 +24,26 @@ describe('HttpExceptionFilter', () => {
       message: 'Not found',
     }));
   });
+
+  it('preserves Fastify HTTP errors', () => {
+    const send = vi.fn();
+    const status = vi.fn(() => ({ send }));
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => ({ status }),
+        getRequest: () => ({ id: 'rate-limit', url: '/limited', log: { error: vi.fn() } }),
+      }),
+    };
+
+    new HttpExceptionFilter().catch(
+      { statusCode: 429, message: 'Rate limit exceeded' },
+      host as never,
+    );
+
+    expect(status).toHaveBeenCalledWith(429);
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 429,
+      message: 'Rate limit exceeded',
+    }));
+  });
 });

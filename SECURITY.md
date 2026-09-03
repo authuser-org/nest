@@ -6,6 +6,8 @@ Security fixes are provided for the latest minor release. Until version 1.0, a
 security fix may include a documented breaking change when that is the safest
 course.
 
+Only maintained Node.js release lines accepted by `package.json` are supported.
+
 ## Report a vulnerability
 
 Do not open a public issue. Send a private report to `security@authuser.es` with

@@ -14,7 +14,21 @@ logging, validation, database latency, TLS and hardware dominate realistic resul
 
 Request logging is disabled by default. Compression is full-preset only because it
 trades bandwidth for CPU. OpenAPI generation happens at startup, and its modules are
-not imported when disabled.
+not imported when disabled. Helmet, CORS, rate limiting and compression are also
+dynamically imported only when their configuration enables them.
+
+## Reproducible baseline
+
+Run the dependency-free local regression benchmark:
+
+```bash
+npm run benchmark
+```
+
+Change duration and concurrency with `BENCHMARK_DURATION_MS` and
+`BENCHMARK_CONNECTIONS`. Results compare an identical route on raw Fastify, the
+minimal preset and the secure preset. Treat them as a regression signal rather than
+a production capacity promise.
 
 ## Choosing a lower-level stack
 

@@ -4,6 +4,8 @@ This application is intentionally small and keeps users in memory. It exercises
 Nest controllers and dependency injection, Fastify, strict DTO validation, Helmet,
 rate limiting, request logging, health, OpenAPI JSON and Swagger UI.
 
+It requires Node.js 22 or newer; Node.js 24 LTS is recommended.
+
 ## Run
 
 Build the library first, then install and start the example:

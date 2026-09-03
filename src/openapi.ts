@@ -19,7 +19,9 @@ export async function registerOpenApi(
   const document = SwaggerModule.createDocument(app, builder.build());
 
   if (options.json) {
-    fastify.get(options.jsonPath, async (_request, reply) => reply.send(document));
+    fastify.get(options.jsonPath, {
+      ...(options.preHandler ? { preHandler: options.preHandler } : {}),
+    }, async (_request, reply) => reply.send(document));
   }
 
   if (options.ui) {
@@ -35,6 +37,7 @@ export async function registerOpenApi(
       uiConfig: { docExpansion: 'list', deepLinking: true, spec: document },
       staticCSP: true,
       transformStaticCSP: (header) => header,
+      ...(options.preHandler ? { uiHooks: { preHandler: options.preHandler } } : {}),
     });
   }
 }

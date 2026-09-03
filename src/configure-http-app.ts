@@ -1,7 +1,3 @@
-import compress from '@fastify/compress';
-import cors from '@fastify/cors';
-import helmet from '@fastify/helmet';
-import rateLimit from '@fastify/rate-limit';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyInstance } from 'fastify';
@@ -18,6 +14,7 @@ export async function configureHttpApp(
   const fastify = app.getHttpAdapter().getInstance() as FastifyInstance;
 
   if (options.security.helmet) {
+    const { default: helmet } = await import('@fastify/helmet');
     await fastify.register(helmet, {
       global: true,
       contentSecurityPolicy: options.security.contentSecurityPolicy,
@@ -25,15 +22,18 @@ export async function configureHttpApp(
   }
 
   if (options.security.cors !== false) {
+    const { default: cors } = await import('@fastify/cors');
     await fastify.register(cors, options.security.cors);
   }
 
   if (options.security.rateLimit !== false && options.security.rateLimit.enabled) {
+    const { default: rateLimit } = await import('@fastify/rate-limit');
     const { enabled: _enabled, ...rateLimitOptions } = options.security.rateLimit;
     await fastify.register(rateLimit, rateLimitOptions);
   }
 
   if (options.compression.enabled) {
+    const { default: compress } = await import('@fastify/compress');
     await fastify.register(compress, {
       threshold: options.compression.threshold,
       encodings: options.compression.encodings,
@@ -67,6 +67,7 @@ export async function configureHttpApp(
   if (options.health.enabled) {
     fastify.get(options.health.path, {
       config: { rateLimit: false },
+      ...(options.health.preHandler ? { preHandler: options.health.preHandler } : {}),
     }, async (_request, reply) => reply.send(options.health.response));
   }
 

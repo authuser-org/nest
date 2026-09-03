@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Upgrade the service to Node 20.11 or newer.
+- Upgrade the service to Node 22 or newer; Node 24 LTS is recommended.
 - Upgrade Nest packages to version 12.
 - Use ESM-compatible imports and include `.js` on relative imports in NodeNext output.
 
@@ -17,6 +17,9 @@ The package no longer supplies an authentication guard with implied behavior.
 application guard.
 
 Swagger, validation packages and Nest/Fastify runtime packages are installed as
-dependencies. Remove redundant direct declarations only after confirming the app
-does not import those packages itself and that your package manager deduplicates a
-single compatible Nest version.
+dependencies or automatically resolved peers. Nest and Fastify are peers so the
+application and this package share one framework instance.
+
+`AuthuserModule` and `AUTHUSER_OPTIONS` were removed because their configuration was
+not connected to adapter creation. Configure the application exclusively through
+`createApp` or `configureHttpApp`.

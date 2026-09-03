@@ -5,6 +5,31 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-03
+
+### Security
+
+- Require maintained Node.js 22 or newer.
+- Add finite connection, request, handler and header timeouts.
+- Redact sensitive authentication and cookie log fields by default.
+- Validate unsafe CORS, invalid rate limits, route collisions and network limits.
+- Preserve native Fastify HTTP errors such as rate-limit responses.
+- Allow OpenAPI and health routes to be protected with pre-handler hooks.
+
+### Changed
+
+- Load optional Fastify integrations dynamically.
+- Expose the complete distributed `@fastify/rate-limit` configuration surface.
+- Move Nest and Fastify to peer dependencies to prevent duplicate framework copies.
+- Remove the disconnected `AuthuserModule` configuration API.
+
+### Development
+
+- Add Node 22/24/26 CI, CodeQL, Dependabot and a dependency-free benchmark harness.
+- Raise automated coverage and enforce coverage thresholds.
+
+## [0.1.2] - 2026-09-03
+
 ### Added
 
 - `createApp` as the concise primary application factory.
@@ -12,6 +37,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 ### Removed
 
 - `createNestApp`, `createHttpApp`, and the legacy `CreateHttpAppOptions` type.
+
+## [0.1.1] - 2026-09-03
+
+### Changed
+
+- Point npm documentation links to the public GitHub repository.
 
 ## [0.1.0] - 2026-09-03
 

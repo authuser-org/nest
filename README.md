@@ -6,7 +6,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@authuser/nest"><img alt="npm" src="https://img.shields.io/npm/v/%40authuser%2Fnest?style=flat-square"></a>
   <a href="https://www.npmjs.com/package/@authuser/nest"><img alt="downloads" src="https://img.shields.io/npm/dm/%40authuser%2Fnest?style=flat-square"></a>
-  <img alt="Node 20+" src="https://img.shields.io/badge/node-%3E%3D20.11-339933?style=flat-square&logo=node.js&logoColor=white">
+  <img alt="Node 22+" src="https://img.shields.io/badge/node-%3E%3D22-339933?style=flat-square&logo=node.js&logoColor=white">
   <img alt="NestJS 12" src="https://img.shields.io/badge/NestJS-12-E0234E?style=flat-square&logo=nestjs&logoColor=white">
   <img alt="Fastify 5" src="https://img.shields.io/badge/Fastify-5-black?style=flat-square&logo=fastify">
   <a href="https://github.com/authuser-org/nest/blob/main/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
@@ -28,6 +28,8 @@ intact while removing repetitive bootstrap code.
 - Fast path: request logs, compression and Swagger UI are off unless requested.
 - Secure defaults: Helmet, strict DTO validation, bounded bodies, strict CORS and
   rate limiting.
+- Finite request, handler, header and connection timeouts.
+- Sensitive authorization, cookie and set-cookie log fields are redacted by default.
 - OpenAPI is optional at runtime. Its code is dynamically imported only when enabled.
 - HTTP QUERY (RFC 10008) passes through Nest 12/Fastify 5 and is included in CORS defaults.
 - Native ESM, strict declarations and a TypeScript 7 toolchain.
@@ -35,7 +37,7 @@ intact while removing repetitive bootstrap code.
 
 ## Requirements
 
-- Node.js 20.11 or newer
+- Node.js 22 or newer (Node.js 24 LTS recommended for production)
 - An ESM project is recommended (`"type": "module"`)
 
 ## Install
@@ -44,9 +46,10 @@ intact while removing repetitive bootstrap code.
 npm install @authuser/nest
 ```
 
-No peer-dependency checklist is required. Runtime integrations such as
-`@nestjs/swagger`, `class-validator` and the Fastify plugins are dependencies of
-this package.
+Nest and Fastify are peer dependencies so an application never loads duplicate
+framework instances. npm 7+ installs them when missing and reuses compatible copies
+already present in a Nest project. Runtime integrations such as `@nestjs/swagger`,
+validation and the Fastify plugins remain included.
 
 ## Quick start
 
@@ -69,8 +72,8 @@ await app.listen({ port: 3000, host: '0.0.0.0' });
 ```
 
 That application has Helmet, rate limiting, safe request IDs, strict validation,
-a 1 MiB body limit and graceful shutdown hooks. Cross-origin requests are not
-enabled implicitly.
+a 1 MiB body limit, finite timeouts and graceful shutdown hooks. Cross-origin
+requests are not enabled implicitly.
 
 ## Presets
 
@@ -113,6 +116,19 @@ openApi: {
 For an internet-facing production service, prefer exporting the JSON during CI or
 protecting documentation routes at the gateway.
 
+Documentation and health routes can also be protected directly:
+
+```ts
+const protectInternalRoute = async (request, reply) => {
+  if (request.headers.authorization !== `Bearer ${process.env.INTERNAL_TOKEN}`) {
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+};
+
+openApi: { enabled: true, preHandler: protectInternalRoute },
+health: { enabled: true, preHandler: protectInternalRoute },
+```
+
 ## Configuration examples
 
 ### CORS allowlist
@@ -139,6 +155,9 @@ security: {
 Never enable `trustProxy: true` unless every direct connection comes through a
 trusted proxy; client IPs are used as rate-limit keys.
 
+For multiple replicas, pass the plugin's `redis` client or a custom `store`; the
+in-memory default only coordinates requests inside one Node process.
+
 ### Existing Nest + Fastify application
 
 ```ts
@@ -157,8 +176,6 @@ its plugins and routes.
 
 - `createApp(options)` — create and configure an application.
 - `configureHttpApp(app, options)` — configure an existing Fastify-based Nest app.
-- `AuthuserModule.forRoot(options)` — expose immutable options through Nest DI.
-- `AUTHUSER_OPTIONS` — injection token for those options.
 - `Public()` and `Roles(...roles)` — metadata helpers for your own guards.
 - `HttpExceptionFilter` — the default safe JSON exception filter.
 
@@ -179,7 +196,8 @@ application before trading away Nest maintainability.
 
 For the hottest path, use `preset: 'minimal'`, leave request logging and compression
 off, declare response schemas in Fastify-compatible routes, and benchmark with your
-actual payloads. See the [performance guide](https://github.com/authuser-org/nest/blob/main/docs/performance.md).
+actual payloads. Run `npm run benchmark` to compare raw Fastify with both package
+presets. See the [performance guide](https://github.com/authuser-org/nest/blob/main/docs/performance.md).
 
 ## Migration from `@authuser/nest-fastify-kit`
 

@@ -1,7 +1,5 @@
 import 'reflect-metadata';
 
-export { AuthuserModule, AUTHUSER_OPTIONS } from './authuser.module.js';
-export type { AuthuserModuleAsyncOptions } from './authuser.module.js';
 export { configureHttpApp } from './configure-http-app.js';
 export { createApp } from './create-app.js';
 export { Public, Roles, IS_PUBLIC_KEY, ROLES_KEY } from './decorators.js';

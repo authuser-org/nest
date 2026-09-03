@@ -37,7 +37,7 @@ describe('createApp', () => {
       rootModule: TestModule,
       preset: 'secure',
       health: true,
-      openApi: { enabled: true, ui: true },
+      openApi: { enabled: true, ui: true, bearerAuth: true },
       observability: { logger: false },
     });
     await app.init();
@@ -51,6 +51,7 @@ describe('createApp', () => {
     expect(hello.json()).toEqual({ hello: 'world' });
     expect(health.json()).toEqual({ status: 'ok' });
     expect(spec.json().paths['/hello']).toBeDefined();
+    expect(spec.json().components.securitySchemes.bearer).toBeDefined();
     expect(docs.statusCode).toBe(200);
     expect(docs.headers['content-security-policy']).toContain("default-src 'self'");
   });
@@ -102,6 +103,74 @@ describe('createApp', () => {
     });
     expect(queryRequest.statusCode).toBe(200);
     expect(queryRequest.json()).toEqual({ supported: true });
+  });
+
+  it('protects internal routes with a pre-handler', async () => {
+    const preHandler = async (request: { headers: Record<string, unknown> }, reply: { code(status: number): { send(body: unknown): void } }) => {
+      if (request.headers.authorization !== 'Bearer test-secret') {
+        reply.code(401).send({ error: 'Unauthorized' });
+      }
+    };
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      health: { enabled: true, preHandler: preHandler as never },
+      openApi: { enabled: true, preHandler: preHandler as never },
+      observability: { logger: false },
+    });
+    await app.init();
+
+    const deniedHealth = await app.inject({ method: 'GET', url: '/health' });
+    const deniedSpec = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const allowedSpec = await app.inject({
+      method: 'GET',
+      url: '/openapi.json',
+      headers: { authorization: 'Bearer test-secret' },
+    });
+
+    expect(deniedHealth.statusCode).toBe(401);
+    expect(deniedSpec.statusCode).toBe(401);
+    expect(allowedSpec.statusCode).toBe(200);
+  });
+
+  it('enforces global rate limiting', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'secure',
+      security: { rateLimit: { max: 1, timeWindow: '1 minute' } },
+      observability: { logger: false },
+    });
+    await app.init();
+
+    expect((await app.inject({ method: 'GET', url: '/hello' })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'GET', url: '/hello' })).statusCode).toBe(429);
+  });
+
+  it('rejects invalid network limits before bootstrapping Nest', async () => {
+    await expect(createApp({
+      rootModule: TestModule,
+      network: { requestTimeout: 0 },
+      observability: { logger: false },
+    })).rejects.toThrow(/requestTimeout/);
+  });
+
+  it('supports response compression and Server-Timing as explicit opt-ins', async () => {
+    app = await createApp({
+      rootModule: TestModule,
+      preset: 'minimal',
+      compression: { enabled: true, threshold: 0 },
+      observability: { logger: false, responseTimeHeader: true },
+    });
+    await app.init();
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/hello',
+      headers: { 'accept-encoding': 'gzip' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-encoding']).toBe('gzip');
+    expect(response.headers['server-timing']).toMatch(/^app;dur=\d+\.\d{2}$/);
   });
 });
 
