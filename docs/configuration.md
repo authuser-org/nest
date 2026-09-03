@@ -34,6 +34,9 @@ can hide unexpected input. Enable it explicitly when DTO conversion is required.
 
 `security.helmet` and `security.rateLimit` are enabled by secure/full presets.
 CORS remains disabled unless an explicit configuration is supplied.
+When enabled, the default advertised methods are GET, HEAD, POST, PUT, PATCH,
+DELETE, OPTIONS and QUERY. Successful browser preflights return HTTP 204 by default;
+`optionsSuccessStatus` can change this for a legacy client that requires 200.
 
 Rate-limit defaults are 100 requests per minute per client IP. Available settings
 include `max`, `timeWindow`, `ban`, `allowList`, and `keyGenerator`.

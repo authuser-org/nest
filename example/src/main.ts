@@ -20,7 +20,7 @@ const app = await createNestApp({
   security: {
     cors: {
       origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
-      methods: ['GET', 'POST'],
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'QUERY'],
     },
     rateLimit: {
       max: 100,

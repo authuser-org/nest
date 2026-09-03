@@ -23,6 +23,7 @@ intact while removing repetitive bootstrap code.
 - Secure defaults: Helmet, strict DTO validation, bounded bodies, strict CORS and
   rate limiting.
 - OpenAPI is optional at runtime. Its code is dynamically imported only when enabled.
+- HTTP QUERY (RFC 10008) passes through Nest 12/Fastify 5 and is included in CORS defaults.
 - Native ESM, strict declarations and a TypeScript 7 toolchain.
 - Escape hatch: the result is a regular Nest application and Fastify instance.
 

@@ -15,3 +15,4 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Optional OpenAPI JSON and Swagger UI.
 - Optional health endpoint and response compression.
 - TypeScript 7 build and declarations.
+- HTTP QUERY (RFC 10008) support in CORS defaults and integration coverage.

@@ -49,7 +49,22 @@ export function resolveOptions(options: ConfigureHttpAppOptions): ResolvedOption
       contentSecurityPolicy: security.contentSecurityPolicy ?? true,
       cors: security.cors === undefined || security.cors === false
         ? false
-        : { ...security.cors, origin: security.cors.origin ?? false },
+        : {
+            ...security.cors,
+            origin: security.cors.origin ?? false,
+            methods: security.cors.methods ?? [
+              'GET',
+              'HEAD',
+              'POST',
+              'PUT',
+              'PATCH',
+              'DELETE',
+              'OPTIONS',
+              'QUERY',
+            ],
+            optionsSuccessStatus: security.cors.optionsSuccessStatus ?? 204,
+            strictPreflight: security.cors.strictPreflight ?? true,
+          },
       rateLimit: rateLimitInput === false
         ? false
         : {

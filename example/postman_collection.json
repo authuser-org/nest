@@ -21,6 +21,25 @@
       "request": { "method": "GET", "url": "{{baseUrl}}/api/users" }
     },
     {
+      "name": "Filter users with query parameter",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/users?email=ada@example.com"
+      }
+    },
+    {
+      "name": "Query users with RFC 10008",
+      "request": {
+        "method": "QUERY",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ada@example.com\"\n}"
+        },
+        "url": "{{baseUrl}}/api/users/search"
+      }
+    },
+    {
       "name": "Get user",
       "request": { "method": "GET", "url": "{{baseUrl}}/api/users/1" }
     },
@@ -46,6 +65,34 @@
           "raw": "{\n  \"name\": \"A\",\n  \"email\": \"not-an-email\",\n  \"unexpected\": true\n}"
         },
         "url": "{{baseUrl}}/api/users"
+      }
+    },
+    {
+      "name": "Replace user",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ada Byron\",\n  \"email\": \"ada.byron@example.com\"\n}"
+        },
+        "url": "{{baseUrl}}/api/users/1"
+      }
+    },
+    {
+      "name": "Delete user",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/users/1" }
+    },
+    {
+      "name": "CORS preflight for PUT",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          { "key": "Origin", "value": "http://localhost:3000" },
+          { "key": "Access-Control-Request-Method", "value": "PUT" },
+          { "key": "Access-Control-Request-Headers", "value": "content-type" }
+        ],
+        "url": "{{baseUrl}}/api/users/1"
       }
     },
     {

@@ -14,8 +14,10 @@ export class UsersService {
   ];
   private nextId = 2;
 
-  findAll(): readonly User[] {
-    return this.users;
+  findAll(email?: string): readonly User[] {
+    if (!email) return this.users;
+    const normalizedEmail = email.trim().toLowerCase();
+    return this.users.filter((user) => user.email === normalizedEmail);
   }
 
   findOne(id: number): User {
@@ -37,5 +39,22 @@ export class UsersService {
     };
     this.users.push(user);
     return user;
+  }
+
+  update(id: number, input: CreateUserDto): User {
+    const user = this.findOne(id);
+    const normalizedEmail = input.email.trim().toLowerCase();
+    if (this.users.some((candidate) => candidate.id !== id && candidate.email === normalizedEmail)) {
+      throw new ConflictException('Email already exists');
+    }
+    user.name = input.name.trim();
+    user.email = normalizedEmail;
+    return user;
+  }
+
+  remove(id: number): void {
+    const index = this.users.findIndex((candidate) => candidate.id === id);
+    if (index === -1) throw new NotFoundException(`User ${id} was not found`);
+    this.users.splice(index, 1);
   }
 }

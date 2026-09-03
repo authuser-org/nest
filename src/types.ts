@@ -13,6 +13,9 @@ export interface CorsOptions {
   allowedHeaders?: string[];
   exposedHeaders?: string[];
   maxAge?: number;
+  /** Status returned for a successful preflight. HTTP 204 is the default. */
+  optionsSuccessStatus?: number;
+  strictPreflight?: boolean;
 }
 
 export interface RateLimitOptions {
