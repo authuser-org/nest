@@ -1,6 +1,6 @@
 {
   "name": "@authuser/nest",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Secure, high-performance NestJS foundation powered by Fastify",
   "keywords": [
     "nestjs",
