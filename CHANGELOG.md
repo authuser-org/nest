@@ -11,6 +11,11 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 - Add optional standard Nest formatting for Fastify and HTTP request logs.
 
+### Fixed
+
+- Compile the development example with TypeScript so Nest dependency-injection
+  metadata is preserved while watching files.
+
 ## [0.2.1] - 2026-09-03
 
 ### Changed
