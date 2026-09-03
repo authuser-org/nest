@@ -5,11 +5,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-03
+
+### Changed
+
+- Let the example use conventional extensionless Nest imports through CommonJS.
+- Document ESM and CommonJS consumption and require Node.js 22.12 or newer for
+  interoperable `require()` support.
+
 ## [0.2.0] - 2026-09-03
 
 ### Security
 
-- Require Node.js 22.12 or newer.
+- Require Node.js 22 or newer.
 - Add finite connection, request, handler and header timeouts.
 - Redact sensitive authentication and cookie log fields by default.
 - Validate unsafe CORS, invalid rate limits, route collisions and network limits.
