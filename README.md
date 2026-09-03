@@ -9,7 +9,13 @@
   <img alt="Node 20+" src="https://img.shields.io/badge/node-%3E%3D20.11-339933?style=flat-square&logo=node.js&logoColor=white">
   <img alt="NestJS 12" src="https://img.shields.io/badge/NestJS-12-E0234E?style=flat-square&logo=nestjs&logoColor=white">
   <img alt="Fastify 5" src="https://img.shields.io/badge/Fastify-5-black?style=flat-square&logo=fastify">
-  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
+  <a href="https://github.com/authuser-org/nest/blob/main/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-green?style=flat-square"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/authuser-org/nest/"><strong>GitHub</strong></a> ·
+  <a href="https://github.com/authuser-org/nest/tree/main/docs"><strong>Documentation</strong></a> ·
+  <a href="https://github.com/authuser-org/nest/tree/main/example"><strong>Example</strong></a>
 </p>
 
 `@authuser/nest` creates a normal `NestFastifyApplication` with careful production
@@ -160,8 +166,8 @@ The decorators intentionally do not provide authentication. Authentication polic
 belongs to the consuming application; pretending otherwise would create a dangerous
 security boundary.
 
-See the [complete option reference](./docs/configuration.md), the
-[security model](./docs/security.md), and the [performance guide](./docs/performance.md).
+See the [complete option reference](https://github.com/authuser-org/nest/blob/main/docs/configuration.md), the
+[security model](https://github.com/authuser-org/nest/blob/main/docs/security.md), and the [performance guide](https://github.com/authuser-org/nest/blob/main/docs/performance.md).
 
 ## Performance notes
 
@@ -173,7 +179,7 @@ application before trading away Nest maintainability.
 
 For the hottest path, use `preset: 'minimal'`, leave request logging and compression
 off, declare response schemas in Fastify-compatible routes, and benchmark with your
-actual payloads. See [docs/performance.md](./docs/performance.md).
+actual payloads. See the [performance guide](https://github.com/authuser-org/nest/blob/main/docs/performance.md).
 
 ## Migration from `@authuser/nest-fastify-kit`
 
@@ -184,7 +190,7 @@ actual payloads. See [docs/performance.md](./docs/performance.md).
 
 The new package targets Nest 12, uses ESM, calls Swagger configuration `openApi`, and
 ships required integrations as normal dependencies. See the
-[migration guide](./docs/migration.md).
+[migration guide](https://github.com/authuser-org/nest/blob/main/docs/migration.md).
 
 ## Development
 
@@ -194,8 +200,8 @@ npm run check
 ```
 
 An executable API and an importable Postman collection are available in the
-[`example`](./example) directory.
+[`example`](https://github.com/authuser-org/nest/tree/main/example) directory.
 
 ## License
 
-[MIT](./LICENSE) © Authuser
+[MIT](https://github.com/authuser-org/nest/blob/main/LICENSE) © Authuser
