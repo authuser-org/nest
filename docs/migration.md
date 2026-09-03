@@ -8,9 +8,9 @@
 
 ## API changes
 
-The application factory keeps its old `createHttpApp` name and also exports
-`createNestApp`. Replace `docs` with `openApi`; replace `network` and security values
-using the typed option reference.
+The application factory is now `createApp`. The previous `createHttpApp` and
+`createNestApp` names are not exported. Replace `docs` with `openApi`; replace
+`network` and security values using the typed option reference.
 
 The package no longer supplies an authentication guard with implied behavior.
 `Public` and `Roles` remain metadata decorators and must be consumed by an explicit

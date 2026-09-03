@@ -5,6 +5,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `createApp` as the concise primary application factory.
+
+### Removed
+
+- `createNestApp`, `createHttpApp`, and the legacy `CreateHttpAppOptions` type.
+
 ## [0.1.0] - 2026-09-03
 
 ### Added

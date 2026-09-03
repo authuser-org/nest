@@ -1,6 +1,6 @@
 # Configuration reference
 
-All settings are optional except `rootModule` when using `createNestApp`.
+All settings are optional except `rootModule` when using `createApp`.
 
 ## Application
 

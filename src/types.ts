@@ -91,7 +91,7 @@ export interface ConfigureHttpAppOptions {
   shutdownHooks?: boolean;
 }
 
-export interface CreateHttpAppOptions extends ConfigureHttpAppOptions {
+export interface CreateAppOptions extends ConfigureHttpAppOptions {
   rootModule: Type<unknown>;
   network?: NetworkOptions;
   nest?: Omit<NestApplicationOptions, 'logger'>;

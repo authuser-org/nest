@@ -8,11 +8,11 @@ import {
 } from '@nestjs/platform-fastify';
 import { configureHttpApp } from './configure-http-app.js';
 import { resolveOptions } from './options.js';
-import type { CreateHttpAppOptions } from './types.js';
+import type { CreateAppOptions } from './types.js';
 
 const SAFE_REQUEST_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 
-export async function createHttpApp(options: CreateHttpAppOptions): Promise<NestFastifyApplication> {
+export async function createApp(options: CreateAppOptions): Promise<NestFastifyApplication> {
   const resolved = resolveOptions(options);
   const network = options.network ?? {};
   const adapter = new FastifyAdapter({
@@ -41,9 +41,6 @@ export async function createHttpApp(options: CreateHttpAppOptions): Promise<Nest
 
   return configureHttpApp(app, options);
 }
-
-/** A descriptive alias for new projects. */
-export const createNestApp = createHttpApp;
 
 function safeRequestId(request: IncomingMessage): string {
   const incoming = request.headers['x-request-id'];

@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Get, Module, QueryMethod } from '@nestjs/common';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { createHttpApp } from '../src/index.js';
+import { createApp } from '../src/index.js';
 
 class TestController {
   hello(): { hello: string } {
@@ -31,9 +31,9 @@ afterEach(async () => {
   app = undefined;
 });
 
-describe('createHttpApp', () => {
+describe('createApp', () => {
   it('serves Nest routes, health and OpenAPI without extra setup', async () => {
-    app = await createHttpApp({
+    app = await createApp({
       rootModule: TestModule,
       preset: 'secure',
       health: true,
@@ -56,7 +56,7 @@ describe('createHttpApp', () => {
   });
 
   it('uses secure headers, bounded bodies and safe error responses', async () => {
-    app = await createHttpApp({
+    app = await createApp({
       rootModule: TestModule,
       preset: 'secure',
       network: { bodyLimit: 16 },

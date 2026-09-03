@@ -52,10 +52,10 @@ this package.
 
 ```ts
 // src/main.ts
-import { createNestApp } from '@authuser/nest';
+import { createApp } from '@authuser/nest';
 import { AppModule } from './app.module.js';
 
-const app = await createNestApp({
+const app = await createApp({
   rootModule: AppModule,
   appName: 'users-api',
   preset: 'secure',
@@ -88,7 +88,7 @@ OpenAPI is installed but disabled with `minimal` and `secure`. Enable only the
 machine-readable document:
 
 ```ts
-const app = await createNestApp({
+const app = await createApp({
   rootModule: AppModule,
   openApi: {
     enabled: true,
@@ -155,7 +155,7 @@ its plugins and routes.
 
 ## Public API
 
-- `createNestApp(options)` / `createHttpApp(options)` — create and configure an app.
+- `createApp(options)` — create and configure an application.
 - `configureHttpApp(app, options)` — configure an existing Fastify-based Nest app.
 - `AuthuserModule.forRoot(options)` — expose immutable options through Nest DI.
 - `AUTHUSER_OPTIONS` — injection token for those options.
@@ -185,7 +185,7 @@ actual payloads. See the [performance guide](https://github.com/authuser-org/nes
 
 ```diff
 - import { createHttpApp } from '@authuser/nest-fastify-kit';
-+ import { createHttpApp } from '@authuser/nest';
++ import { createApp } from '@authuser/nest';
 ```
 
 The new package targets Nest 12, uses ESM, calls Swagger configuration `openApi`, and
